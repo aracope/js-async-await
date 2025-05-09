@@ -58,10 +58,14 @@ function drawCardFromDeck() {
             cardImage.src = card.image;
             cardImage.classList.add('pile-card');
 
-            // Centering the cards
-            const angle = Math.random() * 30 - 15; // Random angle between -15 and 15
-            const x = Math.random() * 30 - 15; // Slight X-axis shift for variety
-            const y = Math.random() * 30 - 15; // Slight Y-axis shift for variety
+            // Random angle between -15 and 15
+            const angle = Math.random() * 30 - 15; 
+
+            // Slight X-axis shift for variety
+            const x = Math.random() * 30 - 15; 
+
+            // Slight Y-axis shift for variety
+            const y = Math.random() * 30 - 15; 
 
             // Position in the center of the card-area
             cardImage.style.position = 'absolute';
@@ -84,8 +88,10 @@ function drawCardFromDeck() {
 // Reset the game
 function resetGame() {
     const cardArea = document.getElementById('card-area');
-    cardArea.innerHTML = ''; // Clear all cards
-    initializeNewDeck(); // Create a fresh deck
+    // Clear all cards
+    cardArea.innerHTML = ''; 
+    // Create a fresh deck
+    initializeNewDeck();
 }
 
 // Event Listeners
