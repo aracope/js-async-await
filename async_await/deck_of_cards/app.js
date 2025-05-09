@@ -1,109 +1,131 @@
+// Deck Management
 let deckId = '';
+let remainingCards = 0;
 
-// Initialize the deck
-function initializeNewDeck() {
-    fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1')
-        .then(res => res.json())
-        .then(data => {
-            deckId = data.deck_id;
-            console.log('New deck created:', deckId);
-            document.getElementById('draw-button').disabled = false;
-        })
-        .catch(error => console.error('Error creating deck:', error));
+// API Functions
+// Fetches a new shuffled deck from the API
+async function fetchDeck() {
+    const response = await fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1');
+    return await response.json();
 }
 
-// Shuffle the deck
-function shuffleFullDeck() {
-    if (!deckId) {
-        initializeNewDeck();
-    } else {
-        fetch(`https://deckofcardsapi.com/api/deck/${deckId}/shuffle/`)
-            .then(() => {
-                console.log('Deck shuffled!');
-            })
-            .catch(error => console.error('Error shuffling deck:', error));
-    }
+// Shuffles the current deck, either fully or remaining cards
+async function fetchShuffle(full = true) {
+    const url = full ? `https://deckofcardsapi.com/api/deck/${deckId}/shuffle/` : `https://deckofcardsapi.com/api/deck/${deckId}/shuffle/?remaining=true`;
+    await fetch(url);
 }
 
-// Reshuffle the remaining cards in the deck
-function reshuffleRemainingCards() {
-    if (!deckId) {
-        initializeNewDeck();
-    } else {
-        fetch(`https://deckofcardsapi.com/api/deck/${deckId}/shuffle/?remaining=true`)
-            .then(() => {
-                console.log('Deck reshuffled!');
-            })
-            .catch(error => console.error('Error reshuffling deck:', error));
-    }
+// Draws one card from the current deck
+async function fetchDraw() {
+    const response = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`);
+    return await response.json();
 }
 
-// Draw a card and display it
-function drawCardFromDeck() {
-    if (!deckId) {
-        initializeNewDeck();
-    }
-
-    fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`)
-        .then(res => res.json())
-        .then(data => {
-            const card = data.cards[0];
-            if (!card) {
-                console.log('No more cards left!');
-                return;
-            }
-
-            const cardArea = document.getElementById('card-area');
-            const cardImage = document.createElement('img');
-            cardImage.src = card.image;
-            cardImage.classList.add('pile-card');
-
-            // Random angle between -15 and 15
-            const angle = Math.random() * 30 - 15; 
-
-            // Slight X-axis shift for variety
-            const x = Math.random() * 30 - 15; 
-
-            // Slight Y-axis shift for variety
-            const y = Math.random() * 30 - 15; 
-
-            // Position in the center of the card-area
-            cardImage.style.position = 'absolute';
-            cardImage.style.top = '50%';
-            cardImage.style.left = '50%';
-            cardImage.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translate(${x}px, ${y}px)`;
-
-            // Append card to the pile
-            cardArea.appendChild(cardImage);
-
-            // Check if no cards remain
-            if (data.remaining === 0) {
-                document.getElementById('draw-button').disabled = true;
-                console.log('No more cards in the deck!');
-            }
-        })
-        .catch(error => console.error('Error drawing the card:', error));
+// Deck Actions
+// Initializes a new deck and displays a message
+async function initializeDeck() {
+    try {
+        const data = await fetchDeck();
+        deckId = data.deck_id;
+        remainingCards = data.remaining;
+        clearCardArea();
+        displayMessage('New deck created and shuffled!');
+        toggleButtons(false);
+    } catch (error) { handleError('Error initializing deck.'); }
 }
 
-// Reset the game
-function resetGame() {
+// Shuffles the entire deck (new deck)
+async function shuffleFullDeck() {
+    try {
+        await initializeDeck();
+        displayMessage('New full deck created and shuffled!');
+    } catch (error) { handleError('Error shuffling deck.'); }
+}
+
+// Shuffles remaining cards if available
+async function reshuffleRemainingCards() {
+    try {
+        if (!deckId) return displayMessage('No cards to reshuffle!');
+
+        if (remainingCards === 0) {
+            displayMessage('No cards to reshuffle!');
+        } else {
+            await fetchShuffle(false);
+            displayMessage('Remaining cards reshuffled!');
+        }
+    } catch (error) { handleError('Error reshuffling remaining cards.'); }
+}
+
+// Draws a card and displays it
+async function drawCard() {
+    try {
+        if (!deckId) await initializeDeck();
+
+        const data = await fetchDraw();
+        remainingCards = data.remaining;
+
+        if (remainingCards === 0) {
+            displayMessage('No cards left to draw!');
+        }
+
+        if (data.cards.length > 0) displayCard(data.cards[0]);
+
+    } catch (error) {
+        handleError('Error drawing card.'); }
+}
+
+// UI Functions
+// Clears the card display area
+function clearCardArea() {
+    document.getElementById('card-area').innerHTML = '';
+}
+
+// Enables or disables buttons
+function toggleButtons(disable) {
+    document.getElementById('draw-button').disabled = disable;
+    document.getElementById('reshuffle-button').disabled = disable;
+}
+
+// Displays a drawn card visually
+function displayCard(card) {
     const cardArea = document.getElementById('card-area');
-    // Clear all cards
-    cardArea.innerHTML = ''; 
-    // Create a fresh deck
-    initializeNewDeck();
+    const cardImage = document.createElement('img');
+    cardImage.src = card.image;
+    cardImage.classList.add('pile-card');
+
+    const angle = Math.random() * 30 - 15;
+    const x = Math.random() * 30 - 15;
+    const y = Math.random() * 30 - 15;
+
+    cardImage.style.position = 'absolute';
+    cardImage.style.top = '50%';
+    cardImage.style.left = '50%';
+    cardImage.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translate(${x}px, ${y}px)`;
+
+    cardArea.appendChild(cardImage);
+}
+
+// Displays messages with an optional timeout
+function displayMessage(message, duration = 3000) {
+    const messageArea = document.getElementById('message-area');
+    messageArea.textContent = message;
+
+    clearTimeout(messageArea.timeoutId);
+
+    if (duration) {
+        messageArea.timeoutId = setTimeout(() => {
+            messageArea.textContent = '';
+        }, duration);
+    }
+}
+
+// Handles error messages
+function handleError(errorMessage) {
+    displayMessage(errorMessage);
 }
 
 // Event Listeners
-document.getElementById('draw-button').addEventListener('click', drawCardFromDeck);
+window.onload = initializeDeck;
+document.getElementById('draw-button').addEventListener('click', drawCard);
 document.getElementById('shuffle-button').addEventListener('click', shuffleFullDeck);
 document.getElementById('reshuffle-button').addEventListener('click', reshuffleRemainingCards);
-document.getElementById('reset-button').addEventListener('click', resetGame);
-
-// Initialize the deck on page load
-window.onload = initializeNewDeck;
-
-
-
-
-

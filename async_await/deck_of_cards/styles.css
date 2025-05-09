@@ -18,6 +18,18 @@ body {
   h1 {
     margin-top: 20px;
   }
+
+  /* Style for message area */
+.message-area {
+  color: var(--text);
+  padding: 10px;
+  margin-top: 20px;
+  font-size: 18px;
+  border-radius: 5px;
+  display: inline-block;
+  transition: opacity 0.3s ease;
+  opacity: 1;
+}
   
   .buttons {
     margin-top: 20px;
